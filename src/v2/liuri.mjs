@@ -35,7 +35,7 @@ function getMonthJieBounds(Lunar, liuNianYear, monthIndex) {
  * @param {number} liuNianYear - 流年年份
  * @param {number} monthIndex - 传统月份索引 (1-12)
  * @param {string} dayMasterGan - 日主天干
- * @returns {Array<{solarYear:number, solarMonth:number, solarDay:number, ganZhi:string, gan:string, zhi:string, shiShen:string}>}
+ * @returns {Array<{solarYear:number, solarMonth:number, solarDay:number, lunarDay:string, lunarMonth:string, ganZhi:string, gan:string, zhi:string, shiShen:string}>}
  */
 export function getLiuRiForMonth(Lunar, liuNianYear, monthIndex, dayMasterGan) {
   if (!Lunar) return [];
@@ -60,6 +60,8 @@ export function getLiuRiForMonth(Lunar, liuNianYear, monthIndex, dayMasterGan) {
         solarYear: y,
         solarMonth: m,
         solarDay: d,
+        lunarDay: lunar.getDayInChinese(),
+        lunarMonth: lunar.getMonthInChinese(),
         ganZhi: gz,
         gan,
         zhi: gz[1],

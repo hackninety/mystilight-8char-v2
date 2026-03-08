@@ -40,6 +40,8 @@ export interface LiuRiItem {
   solarYear: number;
   solarMonth: number;
   solarDay: number;
+  lunarDay: string;
+  lunarMonth: string;
   ganZhi: string;
   gan: string;
   zhi: string;
