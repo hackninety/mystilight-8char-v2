@@ -1,0 +1,66 @@
+name: Sync with upstream
+
+# 定期把上游原库 mystilight/mystilight-8char 的更新合并进本 fork（master），
+# 同时保留本 fork 的 v2 扩展（src/v2/ 等）。合并冲突时任务失败并通知，需手动处理。
+#
+# 触发方式：
+#   · 每周一 06:00 UTC 自动运行
+#   · Actions 页面手动触发（Run workflow）
+#
+# 说明：fork 仓库的「定时工作流」默认被禁用，需在仓库 Actions 页面启用一次；
+# 且 60 天无活动后会自动停用（手动触发或有新提交即可保活）。
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork (master, 全量历史)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          # 默认 GITHUB_TOKEN 即可推回本仓库（需 contents: write）
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 git 身份
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: 添加 upstream 并拉取
+        run: |
+          git remote add upstream https://github.com/mystilight/mystilight-8char.git
+          git fetch --no-tags upstream master
+
+      - name: 合并 upstream/master（保留 fork 扩展）
+        run: |
+          if git merge-base --is-ancestor upstream/master HEAD; then
+            echo "已是最新，上游无新提交，跳过。"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git merge --no-edit upstream/master; then
+            echo "合并成功。"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::与 upstream 合并存在冲突，已中止，请手动解决后再推送。"
+            git merge --abort || true
+            exit 1
+          fi
+        id: merge
+
+      - name: 推回 fork
+        if: steps.merge.outputs.changed == 'true'
+        run: git push origin master
